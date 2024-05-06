@@ -26,7 +26,7 @@ Planning:
 import sys
 import random
 import keyboard
-import time
+
 
 # Initial game board - 7x6 grid with empty cells:
 board = [
@@ -38,25 +38,28 @@ board = [
     [' ', ' ', ' ', ' ', ' ', ' ', ' ']
 ]
 
-game_state = ''
+class Player:
+    def __init__(self, name, symbol):
+        self.name = name
+        self.symbol = symbol
+    
+    def __repr__(self):
+        return f"My name is {self.name}, my symbol is {self.symbol}"
 
 def connect_four(player1, player2):
     """Start the game"""
     # Determine who plays first
-    time.sleep(1)
     number_player1 = random.randint(1, 6)
     number_player2 = random.randint(1, 6)
     while number_player1 == number_player2:
         number_player1 = random.randint(1, 6)
         number_player2 = random.randint(1, 6)
     
-    print(f"{player1} rolls: {number_player1}")
-    print(f"{player2} rolls: {number_player2}")
+    print(f"{player1.name} rolls: {number_player1}")
+    print(f"{player2.name} rolls: {number_player2}")
     
     current_player = player1 if number_player1 > number_player2 else player2
-    print(f"{current_player} will start first.\n")
-    
-    player_symbol = 'X'
+    print(f"{current_player.name} will start first.\n")
     
     # while no winner or no draw:
     while not check_for_winner():
@@ -65,18 +68,18 @@ def connect_four(player1, player2):
         
         # prompt player to make move
         
-        current_player_input = input(f'{current_player} - Choose between 0 to 6 to make a move: ')
+        current_player_input = input(f'{current_player.name} - Choose between 0 to 6 to make a move: ')
         while not validating_player_move(current_player_input):
-            current_player_input = input(f'{current_player} - Please, Make sure you are following the rules. Choose between 0 to 6 to make a move: ')
+            current_player_input = input(f'{current_player.name} - Please, Make sure you are following the rules. Choose between 0 to 6 to make a move: ')
         
         # execute the move
-        execute_player_move(current_player_input, player_symbol)
+        execute_player_move(current_player_input, current_player.symbol)
         
         # check for winner
         if check_for_winner():
             display_board()
             game_state = 'game_over'
-            print(f'Game Over! - Game result: {current_player} is the winner!')
+            print(f'Game Over! - Game result: {current_player.name} is the winner!')
             break
         
         # check for draw
@@ -88,26 +91,31 @@ def connect_four(player1, player2):
         
         # switch player
         current_player = toggle_player(current_player, player1, player2)
-
-        # Toggle symbols
-        player_symbol = 'O' if player_symbol == 'X' else 'X'
     
     if game_state == 'game_over':
         print('exiting the game...')
-        time.sleep(1)
+        
         sys.exit()
     elif game_state == 'draw':
         print("Press ENTER to start new game or ESC to exit")
         while True:
             key_pressed = keyboard.read_event(suppress=True).name
             if key_pressed == 'enter':
-                print("Starting the game...")
-                time.sleep(1)
+                print("Starting new game...")
+                # Reset the board to an empty state for a new game
+                global board  # Declare board as global to modify it within the function
+                board = [
+                    [' ', ' ', ' ', ' ', ' ', ' ', ' '],
+                    [' ', ' ', ' ', ' ', ' ', ' ', ' '],
+                    [' ', ' ', ' ', ' ', ' ', ' ', ' '],
+                    [' ', ' ', ' ', ' ', ' ', ' ', ' '],
+                    [' ', ' ', ' ', ' ', ' ', ' ', ' '],
+                    [' ', ' ', ' ', ' ', ' ', ' ', ' ']
+                ]
                 print("Game started!\n")
                 break
             elif key_pressed == 'esc':
                 print("Exiting the game...")
-                time.sleep(1)
                 sys.exit()
         connect_four(player1, player2)
 
@@ -141,31 +149,34 @@ def execute_player_move(valid_input, symbol):
             break
 
 def check_for_winner():
-    """Check if there's a winner on the current board."""
+    """Check if there's a winner on the current board. return thewinning symbol. else return None"""
     # Check rows:
     for row in range(len(board)):
         for col in range(len(board[0]) - 3):
-            if (board[row][col] == board[row][col + 1] == board[row][col + 2] == board[row][col + 3]) and (board[row][col] != ' '):
-                return board[row][col]
+            sequence = board[row][col:col + 4]  # Get a sequence of 4 symbols
+            if all(symbol == sequence[0] and symbol != ' ' for symbol in sequence):
+                return sequence[0]
     
-    # Check columns:
+    # Check columns: (similar logic as rows)
     for col in range(len(board[0])):
         for row in range(len(board) - 3):
-            if (board[row][col] == board[row + 1][col] == board[row + 2][col] == board[row + 2][col]) and (board[row][col] != ' '):
-                return board[row][col]
+            sequence = [board[i][col] for i in range(row, row + 4)]
+            if all(symbol == sequence[0] and symbol != ' ' for symbol in sequence):
+                return sequence[0]
     
-    # Check diagonals (top-left to bottom-right):
+    # Check diagonals (top-left to bottom-right): (similar logic as rows)
     for row in range(len(board) - 3):
         for col in range(len(board[0]) - 3):
-            if (board[row][col] == board[row + 1][col + 1] == board[row + 2][col + 2] == board[row + 3][col + 3]) and (board[row][col] != ' '):
-                return board[row][col]
+            sequence = [board[row + i][col + i] for i in range(4)]
+            if all(symbol == sequence[0] and symbol != ' ' for symbol in sequence):
+                return sequence[0]
 
-    
-    # Check diagonals (bottom-left to top-right):
+    # Check diagonals (bottom-left to top-right): (similar logic as rows)
     for row in range(3, len(board)):
         for col in range(len(board[0]) - 3):
-            if (board[row][col] == board[row - 1][col + 1] == board[row - 2][col + 2] == board[row - 3][col + 3]) and (board[row][col] != ' '):
-                return board[row][col]
+            sequence = [board[row - i][col + i] for i in range(4)]
+            if all(symbol == sequence[0] and symbol != ' ' for symbol in sequence):
+                return sequence[0]
     
     return None
 
@@ -181,7 +192,7 @@ def toggle_player(current_player, player_1, player_2):
     """Toggle between the first and second player"""
     return player_2 if current_player == player_1 else player_1
 
-# 
+# Confirming the start of the game
 print("Welcome to Connect Four")
 print("Press ENTER to start the game or ESC to exit")
 
@@ -189,21 +200,26 @@ while True:
     key_pressed = keyboard.read_event(suppress=True).name
     if key_pressed == 'enter':
         print("Starting the game...")
-        time.sleep(1)
+        
         print("Game started!\n")
         break
     elif key_pressed == 'esc':
         print("Exiting the game...")
-        time.sleep(1)
+        
         sys.exit()
 
 # Prompt users to enter their names
-player_1 = input("Player 1 name: ")
-while not player_1:
-    player_1 = input("Please enter a valid name for Player 1: ")
+name1 = input("Player 1 name: ")
+while not name1:
+    name1 = input("Please enter a valid name for Player 1: ")
 
-player_2 = input("Player 2 name: ")
-while not player_2:
-    player_2 = input("Please enter a valid name for Player 2: ")
+name2 = input("Player 2 name: ")
+while not name2:
+    name2 = input("Please enter a valid name for Player 2: ")
 
-connect_four(player_1, player_2)
+# Create 2 instances of Player
+player1 = Player(name1, 'X')
+player2 = Player(name2, 'O')
+
+# Starting game
+connect_four(player1, player2)
